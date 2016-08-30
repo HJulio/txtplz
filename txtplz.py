@@ -1,18 +1,23 @@
 from flask import Flask, render_template, request, redirect, url_for, Markup
-from flask_mongoengine import MongoEngine
-import string
-import random
-import datetime
-import markdown
+import string, random, datetime, markdown
 from mdx_bleach.extension import BleachExtension, ALLOWED_TAGS
+from flask_mongoengine import MongoEngine
 
 
 app = Flask(__name__)
 
+
+app.config['MONGODB_SETTINGS'] = {'DB': "txtplz"}
+app.config['SECRET_KEY'] = 'DebugSecret'
+app.config['PERMANENT_SESSION_LIFETIME'] = datetime.timedelta(seconds=3600)
+
 db = MongoEngine(app)
+
+app.jinja_env.autoescape = True
 
 bleach = BleachExtension(tags=ALLOWED_TAGS)
 md = markdown.Markdown(extensions=[bleach, 'markdown.extensions.nl2br'])
+
 
 ### Models
 
@@ -23,6 +28,7 @@ class Txt(db.Document):
 	content = db.StringField(required=True)
 	url = db.StringField(required=True, unique=True)
 	meta = {'allow_inheritance': True}
+
 
 ### Aux
 
@@ -36,9 +42,11 @@ def url_generator(size=6, chars=string.ascii_letters + string.digits):
 def index():
 	return render_template('index.html')
 
+
 @app.route('/md')
 def _md():
 	return render_template('md.html')
+
 
 @app.route('/save', methods=['POST'])
 def save():
@@ -62,3 +70,7 @@ def _url(url):
 	except:
 		return 'error'
 	return render_template('content.html', title=content.title, content=content.content)
+
+
+if __name__ == '__main__':
+	app.run(debug=True)
